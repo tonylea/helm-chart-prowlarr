@@ -58,9 +58,9 @@ spec:
             - name: PROWLARR__AUTH__APIKEY
               valueFrom:
                 {{- include "prowlarr.secretKeyRef" (list "apiKey" .Values.apiKey) | nindent 16 }}
+            # No AUTH__METHOD: setting it skips the first-run screen that creates the user,
+            # and Prowlarr has no setting for the user, so the login could never be passed.
             # Spelled exactly so: Prowlarr parses enum values case-sensitively.
-            - name: PROWLARR__AUTH__METHOD
-              value: Forms
             - name: PROWLARR__AUTH__REQUIRED
               value: Enabled
             - name: PROWLARR__POSTGRES__HOST
