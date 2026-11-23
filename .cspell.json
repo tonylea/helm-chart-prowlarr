@@ -12,6 +12,8 @@
     "package-lock.json"
   ],
   "words": [
-    "kubeconform"
+    "kubeconform",
+    "prowlarr",
+    "Servarr"
   ]
 }
