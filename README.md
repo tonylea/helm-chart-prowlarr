@@ -38,9 +38,9 @@ It has no metrics of its own, so the chart has no ServiceMonitor.
 The chart sets these as environment variables, which override `config.xml`, so they can't be changed in the web UI:
 
 - The API key, from `apiKey`'s Secret, so it is in code rather than generated into `config.xml`.
-- Authentication method `Forms` and authentication required `Enabled`.
-  Prowlarr parses enum values case-sensitively, so they are spelled exactly so.
-  The username and password aren't settings: Prowlarr keeps them in its database and asks for them on first visit.
+- Authentication required `Enabled`, spelled exactly so because Prowlarr parses enum values case-sensitively.
+  The authentication method is left unset: setting it skips the first-run screen that creates the user, and the username and password aren't settings, so the login could never be passed.
+  On first visit Prowlarr asks for the method, username and password.
 - The Postgres connection, from `postgres`.
 
 The pod runs in LinuxServer.io's non-root mode: `uid` and `gid` as the user and group, `runAsNonRoot`, and an empty directory on `/run`.

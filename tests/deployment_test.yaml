@@ -121,8 +121,6 @@ tests:
                 secretKeyRef:
                   name: prowlarr-api-key
                   key: api-key
-            - name: PROWLARR__AUTH__METHOD
-              value: Forms
             - name: PROWLARR__AUTH__REQUIRED
               value: Enabled
             - name: PROWLARR__POSTGRES__HOST
