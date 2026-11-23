@@ -44,8 +44,9 @@ The chart sets these as environment variables, which override `config.xml`, so t
 - The Postgres connection, from `postgres`.
 
 The pod runs in LinuxServer.io's non-root mode: `uid` and `gid` as the user and group, `runAsNonRoot`, and an empty directory on `/run`.
-In this mode the image's `PUID` and `PGID` do nothing and it no longer fixes ownership of `/config`, so the pod sets `fsGroup` to `gid`.
-All capabilities are dropped and privilege escalation is off.
+In this mode the image's `PUID` and `PGID` do nothing and it no longer fixes ownership, and an empty directory is root-owned, so the image won't start on `/run` as it is.
+A short-lived init container from the same image therefore runs as root with only the `CHOWN` capability, and sets `uid:gid` on `/run` and on the top directory of `/config`, not recursively.
+Every other container drops all capabilities and has privilege escalation off.
 
 ## Requirements
 
@@ -53,7 +54,7 @@ All capabilities are dropped and privilege escalation is off.
   Prowlarr's housekeeping runs `VACUUM`, which needs a superuser, so it should connect as one.
   With CloudNativePG, that's its superuser Secret, which holds `username` and `password`.
 - A Secret holding the API key, and one or two holding the Postgres user and password.
-- A `ReadWriteOnce` claim for `/config`, whose storage class honours `fsGroup`, or whose folder is already writable by `uid`.
+- A `ReadWriteOnce` claim for `/config`.
 - The Gateway API's `HTTPRoute` CRD, when `httpRoute.enabled` is set.
 
 ## Usage

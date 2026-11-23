@@ -37,7 +37,7 @@ tests:
             app.kubernetes.io/instance: prowlarr
             app.kubernetes.io/version: 3.0.2.5780-ls169
 
-  - it: runs as 1000:1000 without root, and owns /config through the group
+  - it: runs as 1000:1000 without root
     asserts:
       - equal:
           path: spec.template.spec.securityContext
@@ -45,7 +45,6 @@ tests:
             runAsNonRoot: true
             runAsUser: 1000
             runAsGroup: 1000
-            fsGroup: 1000
             seccompProfile:
               type: RuntimeDefault
       - equal:
@@ -67,8 +66,34 @@ tests:
           path: spec.template.spec.securityContext.runAsGroup
           value: 100
       - equal:
-          path: spec.template.spec.securityContext.fsGroup
-          value: 100
+          path: spec.template.spec.initContainers[0].command
+          value: [chown, "1026:100", /run, /config]
+
+  - it: sets the owner of /run and /config from the only root container
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: lscr.io/linuxserver/prowlarr:3.0.2.5780-ls169
+      - equal:
+          path: spec.template.spec.initContainers[0].command
+          value: [chown, "1000:1000", /run, /config]
+      - equal:
+          path: spec.template.spec.initContainers[0].securityContext
+          value:
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN]
+      - equal:
+          path: spec.template.spec.initContainers[0].volumeMounts
+          value:
+            - name: run
+              mountPath: /run
+            - name: config
+              mountPath: /config
 
   - it: drops every capability and privilege escalation
     asserts:

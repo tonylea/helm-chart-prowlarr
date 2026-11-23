@@ -20,14 +20,31 @@ spec:
     spec:
       enableServiceLinks: false
       automountServiceAccountToken: false
-      # The image's non-root mode: PUID and PGID do nothing, and /config must already be writable by this user.
+      # The image's non-root mode: PUID and PGID do nothing, and it needs /run and /config owned by this user.
       securityContext:
         runAsNonRoot: true
         runAsUser: {{ .Values.uid }}
         runAsGroup: {{ .Values.gid }}
-        fsGroup: {{ .Values.gid }}
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        # The only root container: an emptyDir is root-owned, and the image won't start unless /run is owned by its user.
+        - name: chown
+          image: "lscr.io/linuxserver/prowlarr:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          command: [chown, {{ printf "%v:%v" .Values.uid .Values.gid | quote }}, /run, /config]
+          securityContext:
+            runAsNonRoot: false
+            runAsUser: 0
+            runAsGroup: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+              add: [CHOWN]
+          volumeMounts:
+            - name: run
+              mountPath: /run
+            - name: config
+              mountPath: /config
       containers:
         - name: prowlarr
           image: "lscr.io/linuxserver/prowlarr:{{ .Values.image.tag | default .Chart.AppVersion }}"
