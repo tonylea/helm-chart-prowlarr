@@ -1,0 +1,19 @@
+suite: Service
+release:
+  name: prowlarr
+templates:
+  - templates/service.yaml
+tests:
+  - it: exposes Prowlarr's port to the pod's selector labels
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: prowlarr
+            app.kubernetes.io/instance: prowlarr
+      - equal:
+          path: spec.ports
+          value:
+            - name: http
+              port: 9696
+              targetPort: http

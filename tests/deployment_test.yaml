@@ -1,0 +1,231 @@
+suite: Deployment
+release:
+  name: prowlarr
+templates:
+  - templates/deployment.yaml
+values:
+  - ../ci/kind-values.yaml
+tests:
+  - it: runs one replica of the chart's appVersion, stopping the old pod first
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.strategy.type
+          value: Recreate
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lscr.io/linuxserver/prowlarr:3.0.2.5780-ls169
+
+  - it: uses the image tag when one is set
+    set:
+      image.tag: 3.0.1.5000-ls1
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lscr.io/linuxserver/prowlarr:3.0.1.5000-ls1
+
+  - it: leaves the chart's version off the pod, so a chart-only release doesn't restart it
+    chart:
+      version: 9.9.9
+    asserts:
+      - equal:
+          path: spec.template.metadata.labels
+          value:
+            app.kubernetes.io/name: prowlarr
+            app.kubernetes.io/instance: prowlarr
+            app.kubernetes.io/version: 3.0.2.5780-ls169
+
+  - it: runs as 1000:1000 without root, and owns /config through the group
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext
+          value:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+      - equal:
+          path: spec.template.spec.enableServiceLinks
+          value: false
+      - equal:
+          path: spec.template.spec.automountServiceAccountToken
+          value: false
+
+  - it: runs as the user and group when they are set
+    set:
+      uid: 1026
+      gid: 100
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 1026
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 100
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 100
+
+  - it: drops every capability and privilege escalation
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+
+  - it: passes the time zone, the login settings and Prowlarr's settings
+    set:
+      timezone: Europe/Berlin
+      postgres.port: 5433
+      postgres.databases.main: indexers
+      postgres.databases.log: indexers-log
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env
+          value:
+            - name: TZ
+              value: Europe/Berlin
+            - name: PROWLARR__AUTH__APIKEY
+              valueFrom:
+                secretKeyRef:
+                  name: prowlarr-api-key
+                  key: api-key
+            - name: PROWLARR__AUTH__METHOD
+              value: Forms
+            - name: PROWLARR__AUTH__REQUIRED
+              value: Enabled
+            - name: PROWLARR__POSTGRES__HOST
+              value: postgres
+            - name: PROWLARR__POSTGRES__PORT
+              value: "5433"
+            - name: PROWLARR__POSTGRES__MAINDB
+              value: indexers
+            - name: PROWLARR__POSTGRES__LOGDB
+              value: indexers-log
+            - name: PROWLARR__POSTGRES__USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: username
+            - name: PROWLARR__POSTGRES__PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+
+  - it: defaults the time zone and databases
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: TZ
+            value: UTC
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PROWLARR__POSTGRES__PORT
+            value: "5432"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PROWLARR__POSTGRES__MAINDB
+            value: prowlarr-main
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: PROWLARR__POSTGRES__LOGDB
+            value: prowlarr-log
+
+  - it: fails without the API key's Secret
+    set:
+      apiKey.secretKeyRef.name: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: apiKey.secretKeyRef.name is required
+
+  - it: fails without the Postgres host
+    set:
+      postgres.host: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: postgres.host is required
+
+  - it: fails without the Postgres username's Secret
+    set:
+      postgres.username.secretKeyRef.name: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: postgres.username.secretKeyRef.name is required
+
+  - it: fails without the Postgres password's Secret
+    set:
+      postgres.password.secretKeyRef.name: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: postgres.password.secretKeyRef.name is required
+
+  - it: probes /ping, giving start-up 5 minutes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].startupProbe
+          value:
+            httpGet:
+              path: /ping
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /ping
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /ping
+
+  - it: leaves resources to whoever deploys it
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value: {}
+
+  - it: uses the resources when set
+    set:
+      resources.requests.cpu: 50m
+      resources.requests.memory: 256Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources
+          value:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+
+  - it: mounts the existing claim at /config and an empty directory at /run
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: config
+              mountPath: /config
+            - name: run
+              mountPath: /run
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: config
+              persistentVolumeClaim:
+                claimName: prowlarr-config
+            - name: run
+              emptyDir: {}
+
+  - it: fails without a claim for /config
+    set:
+      persistence.config.existingClaim: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: persistence.config.existingClaim is required
