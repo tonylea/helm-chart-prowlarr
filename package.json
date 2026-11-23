@@ -1,6 +1,6 @@
 {
   "name": "helm-chart-prowlarr",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Deploys Prowlarr, which manages indexers for the Servarr apps",
   "private": true,
   "repository": {
