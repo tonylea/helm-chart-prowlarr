@@ -12,6 +12,19 @@
     "package-lock.json"
   ],
   "words": [
-    "kubeconform"
+    "APIKEY",
+    "httproute",
+    "isready",
+    "kubeconform",
+    "LOGDB",
+    "lscr",
+    "MAINDB",
+    "nindent",
+    "PGID",
+    "prowlarr",
+    "PUID",
+    "Servarr",
+    "timezone",
+    "writable"
   ]
 }

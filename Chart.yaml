@@ -1,0 +1,10 @@
+apiVersion: v2
+name: prowlarr
+description: Deploys Prowlarr, which manages indexers for the Servarr apps
+type: application
+version: 1.0.0
+appVersion: "3.0.2.5780-ls169"
+home: https://github.com/tonylea/helm-chart-prowlarr
+sources:
+  - https://github.com/Prowlarr/Prowlarr
+  - https://github.com/linuxserver/docker-prowlarr

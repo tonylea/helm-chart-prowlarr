@@ -1,0 +1,14 @@
+apiKey:
+  secretKeyRef:
+    name: prowlarr-api-key
+postgres:
+  host: postgres
+  username:
+    secretKeyRef:
+      name: postgres
+  password:
+    secretKeyRef:
+      name: postgres
+persistence:
+  config:
+    existingClaim: prowlarr-config

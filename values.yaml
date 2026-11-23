@@ -1,0 +1,38 @@
+image:
+  tag: ""
+
+uid: 1000
+gid: 1000
+
+timezone: UTC
+
+apiKey:
+  secretKeyRef:
+    name: ""
+    key: api-key
+
+postgres:
+  host: ""
+  port: 5432
+  databases:
+    main: prowlarr-main
+    log: prowlarr-log
+  username:
+    secretKeyRef:
+      name: ""
+      key: username
+  password:
+    secretKeyRef:
+      name: ""
+      key: password
+
+resources: {}
+
+persistence:
+  config:
+    existingClaim: ""
+
+httpRoute:
+  enabled: false
+  parentRefs: []
+  hostnames: []
